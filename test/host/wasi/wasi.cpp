@@ -1116,6 +1116,9 @@ TEST(WasiTest, PollOneoffSocketV1) {
       EXPECT_EQ(Events[0].userdata,
                 WasmEdge::EndianValue(0x1010101010101010).le());
       EXPECT_EQ(Events[0].fd_readwrite.flags, 0);
+      EXPECT_EQ(
+          Events[0].fd_readwrite.nbytes,
+          WasmEdge::EndianValue<__wasi_filesize_t>("server"sv.size()).le());
     };
     auto PollWriteTimeout = [&]() {
       const uint32_t Count = 2;
@@ -2043,6 +2046,9 @@ TEST(WasiTest, PollOneoffSocketV2) {
       EXPECT_EQ(Events[0].userdata,
                 WasmEdge::EndianValue(0x1010101010101010).le());
       EXPECT_EQ(Events[0].fd_readwrite.flags, WasmEdge::EndianValue(0).le());
+      EXPECT_EQ(
+          Events[0].fd_readwrite.nbytes,
+          WasmEdge::EndianValue<__wasi_filesize_t>("server"sv.size()).le());
     };
     auto PollWriteTimeout = [&]() {
       const uint32_t Count = 2;
@@ -2972,6 +2978,9 @@ TEST(WasiTest, EpollOneoffSocketV1) {
       EXPECT_EQ(Events[0].type,
                 WasmEdge::EndianValue(__WASI_EVENTTYPE_FD_READ).le());
       EXPECT_EQ(Events[0].fd_readwrite.flags, WasmEdge::EndianValue(0).le());
+      EXPECT_EQ(
+          Events[0].fd_readwrite.nbytes,
+          WasmEdge::EndianValue<__wasi_filesize_t>("server"sv.size()).le());
     };
     auto PollWriteTimeout = [&]() {
       const uint32_t Count = 2;
