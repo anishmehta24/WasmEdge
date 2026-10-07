@@ -2808,7 +2808,8 @@ WasmEdge_TableInstanceCreateWithInit(const WasmEdge_TableTypeContext *TabType,
       // simply match the FuncRef and ExternRef here.
       const AST::TableType &TType = *fromTabTypeCxt(TabType);
       WasmEdge::ValType GotType = genValType(Value.Type);
-      if (TType.getRefType().isFuncRefType() != GotType.isFuncRefType()) {
+      if (!GotType.isRefType() ||
+          TType.getRefType().isFuncRefType() != GotType.isFuncRefType()) {
         spdlog::error(WasmEdge::ErrCode::Value::RefTypeMismatch);
         spdlog::error(
             WasmEdge::ErrInfo::InfoMismatch(TType.getRefType(), GotType));
@@ -3037,7 +3038,8 @@ WasmEdge_GlobalInstanceCreate(const WasmEdge_GlobalTypeContext *GlobType,
       const AST::GlobalType &GType = *fromGlobTypeCxt(GlobType);
       WasmEdge::ValType ExpType = GType.getValType();
       WasmEdge::ValType GotType = genValType(Value.Type);
-      if (ExpType.isFuncRefType() != GotType.isFuncRefType()) {
+      if (ExpType.isRefType() != GotType.isRefType() ||
+          ExpType.isFuncRefType() != GotType.isFuncRefType()) {
         spdlog::error(WasmEdge::ErrCode::Value::SetValueErrorType);
         spdlog::error(WasmEdge::ErrInfo::InfoMismatch(ExpType, GotType));
         return nullptr;
@@ -3107,7 +3109,8 @@ WASMEDGE_CAPI_EXPORT WasmEdge_Result WasmEdge_GlobalInstanceSetValue(
         WasmEdge::ValType ExpType = GlobType.getValType();
         WasmEdge::ValType GotType = genValType(Value.Type);
         if (ExpType.isRefType() &&
-            ExpType.isFuncRefType() != GotType.isFuncRefType()) {
+            (!GotType.isRefType() ||
+             ExpType.isFuncRefType() != GotType.isFuncRefType())) {
           spdlog::error(WasmEdge::ErrCode::Value::RefTypeMismatch);
           spdlog::error(WasmEdge::ErrInfo::InfoMismatch(ExpType, GotType));
           return Unexpect(WasmEdge::ErrCode::Value::RefTypeMismatch);

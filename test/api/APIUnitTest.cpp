@@ -2462,6 +2462,15 @@ TEST(APICoreTest, Instance) {
   WasmEdge_TableInstanceDelete(TabCxt);
   EXPECT_TRUE(true);
 
+  // Table instance create with a number value for a reference type
+  TabLim = WasmEdge_LimitCreate(10, false);
+  TabType = WasmEdge_TableTypeCreate(WasmEdge_ValTypeGenExternRef(), TabLim);
+  WasmEdge_LimitDelete(TabLim);
+  EXPECT_EQ(
+      WasmEdge_TableInstanceCreateWithInit(TabType, WasmEdge_ValueGenI32(0)),
+      nullptr);
+  WasmEdge_TableTypeDelete(TabType);
+
   // Table instance create with init
   VType = WasmEdge_ValTypeGenExternRef();
   // TODO: Forcibly change to non-nullable. Refine this after providing the
@@ -2669,6 +2678,20 @@ TEST(APICoreTest, Instance) {
   EXPECT_EQ(WasmEdge_ValueGetI64(Val), 88888888888LL);
   EXPECT_TRUE(isErrMatch(WasmEdge_ErrCode_WrongVMWorkflow,
                          WasmEdge_GlobalInstanceSetValue(nullptr, Val)));
+
+  // Global instance with number values for a reference type
+  GlobVType = WasmEdge_GlobalTypeCreate(WasmEdge_ValTypeGenExternRef(),
+                                        WasmEdge_Mutability_Var);
+  EXPECT_EQ(WasmEdge_GlobalInstanceCreate(GlobVType, WasmEdge_ValueGenI32(0)),
+            nullptr);
+  WasmEdge_GlobalInstanceContext *GlobRefCxt = WasmEdge_GlobalInstanceCreate(
+      GlobVType, WasmEdge_ValueGenExternRef(nullptr));
+  WasmEdge_GlobalTypeDelete(GlobVType);
+  EXPECT_NE(GlobRefCxt, nullptr);
+  EXPECT_TRUE(isErrMatch(
+      WasmEdge_ErrCode_RefTypeMismatch,
+      WasmEdge_GlobalInstanceSetValue(GlobRefCxt, WasmEdge_ValueGenI64(1))));
+  WasmEdge_GlobalInstanceDelete(GlobRefCxt);
 
   // Global instance deletion
   WasmEdge_GlobalInstanceDelete(nullptr);
