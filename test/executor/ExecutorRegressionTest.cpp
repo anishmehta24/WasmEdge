@@ -752,6 +752,17 @@ std::array<WasmEdge::Byte, 70> RecurseWasm{
     0x7e, 0x42, 0x00, 0x05, 0x20, 0x00, 0x42, 0x01, 0x7d, 0x10, 0x00, 0x0b,
     0x0b, 0x00, 0x13, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x01, 0x04, 0x01, 0x00,
     0x01, 0x66, 0x02, 0x06, 0x01, 0x00, 0x01, 0x00, 0x01, 0x6e};
+
+/// (module
+///   (table $t i64 0 externref)
+///   (func (export "grow") (param i64) (result i64)
+///     (table.grow $t (ref.null extern) (local.get 0))))
+std::array<WasmEdge::Byte, 49> TableGrow64Wasm{
+    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x06, 0x01, 0x60,
+    0x01, 0x7e, 0x01, 0x7e, 0x03, 0x02, 0x01, 0x00, 0x04, 0x04, 0x01, 0x6f,
+    0x04, 0x00, 0x07, 0x08, 0x01, 0x04, 0x67, 0x72, 0x6f, 0x77, 0x00, 0x00,
+    0x0a, 0x0b, 0x01, 0x09, 0x00, 0xd0, 0x6f, 0x20, 0x00, 0xfc, 0x0f, 0x00,
+    0x0b};
 // clang-format on
 
 /// Regression test for ref.test on externalized nullable references.
@@ -1484,6 +1495,30 @@ TEST(ExecutorRegression, CallStackDefaultLimit) {
   auto Result = VM.execute("f", RunawayParams, ParamTypes);
   ASSERT_FALSE(Result);
   EXPECT_EQ(Result.error(), ErrCode::Value::CallStackExhausted);
+}
+
+/// table.grow must return -1 instead of aborting the host when the table
+/// cannot be grown to the requested size.
+TEST(ExecutorRegression, TableGrowOversized) {
+  Configure Conf;
+  VM::VM VM(Conf);
+  ASSERT_TRUE(VM.loadWasm(TableGrow64Wasm));
+  ASSERT_TRUE(VM.validate());
+  ASSERT_TRUE(VM.instantiate());
+
+  const std::vector<ValType> ParamTypes = {ValType(TypeCode::I64)};
+  const std::vector<ValVariant> OversizedParams = {
+      ValVariant(UINT64_C(1) << 62)};
+  auto Result = VM.execute("grow", OversizedParams, ParamTypes);
+  ASSERT_TRUE(Result);
+  ASSERT_EQ(Result->size(), 1U);
+  EXPECT_EQ(Result->at(0).first.get<uint64_t>(), UINT64_MAX);
+
+  const std::vector<ValVariant> Params = {ValVariant(UINT64_C(2))};
+  Result = VM.execute("grow", Params, ParamTypes);
+  ASSERT_TRUE(Result);
+  ASSERT_EQ(Result->size(), 1U);
+  EXPECT_EQ(Result->at(0).first.get<uint64_t>(), UINT64_C(0));
 }
 
 } // namespace
