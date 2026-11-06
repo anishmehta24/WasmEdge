@@ -3,6 +3,9 @@
 
 #include "executor/executor.h"
 
+#include <cstdint>
+#include <new>
+
 namespace WasmEdge {
 namespace Executor {
 
@@ -144,4 +147,19 @@ Expect<void> Executor::runTableFillOp(Runtime::StackManager &StackMgr,
 }
 
 } // namespace Executor
+
+namespace Runtime {
+namespace Instance {
+
+bool TableInstance::resizeRefs(const uint64_t Size) noexcept {
+  try {
+    Refs.resize(Size);
+  } catch (const std::bad_alloc &) {
+    return false;
+  }
+  return true;
+}
+
+} // namespace Instance
+} // namespace Runtime
 } // namespace WasmEdge
